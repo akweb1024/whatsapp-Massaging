@@ -1,23 +1,69 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import { getDatabase, ref, onValue, onDisconnect, set } from "firebase/database";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyA5rl0Q7BWoI7E6mz1TTxXrMSGc3UgZaas",
-  authDomain: "whatsapp-messaging-a0cb1.firebaseapp.com",
-  projectId: "whatsapp-messaging-a0cb1",
-  storageBucket: "whatsapp-messaging-a0cb1.appspot.com",
-  messagingSenderId: "128415525768",
-  appId: "1:128415525768:web:5adb66ac80d44ecc07683d",
-  measurementId: "G-7SNSES8KY3"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
+const rtdb = getDatabase(app);
 
-export { db };
+onAuthStateChanged(auth, user => {
+    if (user) {
+        const userStatusDatabaseRef = ref(rtdb, '/status/' + user.uid);
+        const isOfflineForDatabase = {
+            isOnline: false,
+            last_changed: Date.now(),
+        };
+        const isOnlineForDatabase = {
+            isOnline: true,
+            last_changed: Date.now(),
+        };
+
+        const userStatusFirestoreRef = doc(db, '/users/' + user.uid);
+        const isOfflineForFirestore = {
+            isOnline: false,
+            last_changed: Date.now(),
+        };
+        const isOnlineForFirestore = {
+            isOnline: true,
+            last_changed: Date.now(),
+        };
+
+        onValue(ref(rtdb, '.info/connected'), (snapshot) => {
+            if (snapshot.val() === false) {
+                setDoc(userStatusFirestoreRef, isOfflineForFirestore, { merge: true });
+                return;
+            }
+
+            onDisconnect(userStatusDatabaseRef).set(isOfflineForDatabase).then(() => {
+                set(userStatusDatabaseRef, isOnlineForDatabase);
+                setDoc(userStatusFirestoreRef, isOnlineForFirestore, { merge: true });
+            });
+        });
+
+        // Create user in firestore if they don't exist
+        setDoc(userStatusFirestoreRef, { 
+            displayName: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL,
+        }, { merge: true });
+
+    } else {
+        // User is signed out
+    }
+});
+
+export { app, db, auth, storage, rtdb };

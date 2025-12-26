@@ -1,167 +1,157 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   AppBar,
   Box,
-  Container,
-  TextField,
   Toolbar,
   Typography,
   CssBaseline,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
   createTheme,
   ThemeProvider,
+  Grid,
+  Button,
+  CircularProgress
 } from '@mui/material';
-import { db } from './firebase'; // Make sure this path is correct
-import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { auth, db } from './firebase';
+import { useAuth } from './useAuth';
+import Login from './Login';
+import ConversationList from './ConversationList';
+import Messages from './Messages';
+import NewConversationModal from './NewConversationModal';
+import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 
-// Define a theme for the app
+
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     background: {
-      default: '#121212',
-      paper: '#1E1E1E',
+      default: '#0B141A',
+      paper: '#1F2C34',
     },
     primary: {
-      main: '#00A884', // WhatsApp green
+      main: '#8643D2', // A nice purple
     },
     text: {
-      primary: '#FFFFFF',
-      secondary: '#B0B0B0',
+      primary: '#E7E9EA',
+      secondary: '#AEB4B7',
     },
   },
   components: {
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1F2C34', // Darker header
+          backgroundColor: '#1F2C34',
         },
       },
     },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            '& fieldset': {
-              borderColor: '#3E4A52',
-            },
-            '&:hover fieldset': {
-              borderColor: '#00A884',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#00A884',
-            },
-          },
-        },
-      },
-    },
+    MuiButton: {
+        styleOverrides: {
+            root: {
+                borderRadius: '25px',
+                textTransform: 'none',
+                fontWeight: 'bold',
+            }
+        }
+    }
   },
 });
 
-interface Message {
-  id: string;
-  content: string;
-  senderType: 'agent' | 'customer';
-  timestamp: Timestamp;
-  status: 'sent' | 'delivered' | 'read';
-  type: 'text' | 'media';
-}
-
-const CONVERSATION_ID = 'dev_conversation'; // Hardcoded for development
-
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const { user, loading } = useAuth();
+  const [selectedConversation, setSelectedConversation] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const messagesRef = collection(db, 'conversations', CONVERSATION_ID, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+  const handleSelectConversation = (conversationId: string) => {
+    setSelectedConversation(conversationId);
+  };
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messagesData: Message[] = [];
-      querySnapshot.forEach((doc) => {
-        messagesData.push({ id: doc.id, ...doc.data() } as Message);
-      });
-      setMessages(messagesData);
-    });
+  const handleSignOut = () => {
+    signOut(auth);
+  };
 
-    return () => unsubscribe();
-  }, []);
+  const handleStartConversation = async (otherUserId: string) => {
+    if (user) {
+        const conversationId = [user.uid, otherUserId].sort().join('_');
+        const conversationRef = doc(db, "conversations", conversationId);
+        const conversationSnap = await getDoc(conversationRef);
 
-  const handleSendMessage = async () => {
-    if (inputValue.trim() !== '') {
-      const messagesRef = collection(db, 'conversations', CONVERSATION_ID, 'messages');
-      await addDoc(messagesRef, {
-        content: inputValue,
-        senderType: 'customer', // Assuming the user is the customer
-        timestamp: Timestamp.now(),
-        status: 'sent',
-        type: 'text',
-      });
-      setInputValue('');
+        if (!conversationSnap.exists()) {
+            await setDoc(conversationRef, {
+                createdAt: Timestamp.now(),
+                participants: [user.uid, otherUserId],
+                lastMessage: "",
+            });
+        }
+        setSelectedConversation(conversationId);
+        setIsModalOpen(false);
     }
   };
 
+  if (loading) {
+    return (
+        <ThemeProvider theme={darkTheme}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        </ThemeProvider>
+    );
+  }
+
+  if (!user) {
+    return <ThemeProvider theme={darkTheme}><Login /></ThemeProvider>;
+  }
+
   return (
     <ThemeProvider theme={darkTheme}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <NewConversationModal 
+            open={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            onStartConversation={handleStartConversation} 
+        />
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <CssBaseline />
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              WhatsApp Messaging
+              Chat App
             </Typography>
+            <Button color="inherit" onClick={handleSignOut}>Sign Out</Button>
           </Toolbar>
         </AppBar>
-        <Container
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            py: 2,
-          }}
-        >
-          <Paper elevation={3} sx={{ flexGrow: 1, overflowY: 'auto', p: 2, mb: 2 }}>
-            <List>
-              {messages.map((msg) => (
-                <ListItem key={msg.id}>
-                  <ListItemText
-                    primary={msg.content}
-                    secondary={msg.timestamp?.toDate().toLocaleTimeString()}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-          <Box
-            component="form"
-            sx={{ display: 'flex' }}
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage();
+        <Grid container sx={{ flexGrow: 1, height: 'calc(100vh - 64px)' }}>
+          <Grid
+            item
+            xs={12} sm={4}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              borderRight: '1px solid #3E4A52',
+              height: '100%',
+              backgroundColor: '#111B21'
             }}
           >
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Type a message"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-            />
-          </Box>
-        </Container>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+              <ConversationList onSelectConversation={handleSelectConversation} selectedConversationId={selectedConversation} />
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <Button onClick={() => setIsModalOpen(true)} fullWidth variant="contained" color="primary" sx={{py: 1.5}}>
+                  New Conversation
+              </Button>
+            </Box>
+          </Grid>
+          <Grid item xs={12} sm={8} sx={{ height: '100%' }}>
+            {selectedConversation ? (
+              <Messages key={selectedConversation} conversationId={selectedConversation} user={user} />
+            ) : (
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', flexDirection: 'column', textAlign: 'center', p: 3}}>
+                    <img src="/undraw_welcoming_re_x0qo.svg" alt="Welcome" style={{width: '70%', maxWidth: '300px', marginBottom: '2rem'}}/>
+                    <Typography variant="h4" sx={{mb: 1, fontWeight: 'bold'}}>Welcome to the Chat App</Typography>
+                    <Typography variant="body1" sx={{color: 'text.secondary'}}>Select a conversation or start a new one to begin chatting.</Typography>
+                </Box>
+            )}
+          </Grid>
+        </Grid>
       </Box>
     </ThemeProvider>
   );

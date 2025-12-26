@@ -2,29 +2,52 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read/write access for development.
-    // TODO: Secure these rules before production.
-    match /tenants/{tenantId} {
-      allow read, write: if true;
+    function isSuperAdmin() {
+      return getUserData(request.auth.uid).role == 'super_admin';
     }
+
+    function isCompanyAdmin(companyId) {
+      let userData = getUserData(request.auth.uid);
+      return userData.role == 'company_admin' && userData.companyId == companyId;
+    }
+
+    function isAgent(companyId) {
+      let userData = getUserData(request.auth.uid);
+      return userData.role == 'agent' && userData.companyId == companyId;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    match /config/whatsapp {
+      allow read, write: if isSuperAdmin();
+    }
+
+    match /companies/{companyId} {
+      allow read, write: if isSuperAdmin();
+      allow read: if isCompanyAdmin(companyId);
+    }
+
     match /users/{userId} {
-      allow read, write: if true;
+      allow read, write: if isSuperAdmin();
+      allow read: if request.auth.uid == userId;
+      allow write: if isCompanyAdmin(getUserData(userId).companyId);
     }
-    match /contacts/{contactId} {
-      allow read, write: if true;
+
+    match /usage_logs/{logId} {
+      allow read: if isSuperAdmin() || isCompanyAdmin(resource.data.companyId);
     }
-    match /campaigns/{campaignId} {
-      allow read, write: if true;
-    }
-    match /templates/{templateId} {
-      allow read, write: if true;
+
+    match /activities/{activityId} {
+      allow read: if isSuperAdmin() || isCompanyAdmin(resource.data.companyId) || isAgent(resource.data.companyId);
     }
 
     match /conversations/{convId} {
-      allow read, write: if true;
+      allow read, write: if isSuperAdmin() || isCompanyAdmin(resource.data.companyId) || isAgent(resource.data.companyId);
 
       match /messages/{msgId} {
-        allow read, write: if true;
+        allow read, write: if isSuperAdmin() || isCompanyAdmin(get(/databases/$(database)/documents/conversations/$(convId)).data.companyId) || isAgent(get(/databases/$(database)/documents/conversations/$(convId)).data.companyId);
       }
     }
   }

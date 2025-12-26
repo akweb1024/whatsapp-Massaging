@@ -1,38 +1,61 @@
-# Application Quality Assurance and Improvement Plan
+# Blueprint: Multi-Tenant Role-Based Dashboard & Reporting System
 
-This document outlines the plan for a comprehensive analysis, debugging, and enhancement of the application to ensure it meets enterprise-grade standards.
+This document outlines the architecture and implementation plan for a multi-tenant, role-based dashboard system for the WhatsApp Management SaaS platform.
 
-## Phase 1: Assessment and Planning
+## 1. Core Architecture Principles
+- **Strict Multi-Tenancy:** Complete data segregation by Company ID.
+- **Granular RBAC:** Three roles: `super_admin`, `company_admin`, and `agent`.
+- **Context-Aware UI:** The UI will dynamically adapt to the logged-in user's role.
+- **Independent API Management:** Each company will manage its own WhatsApp API credentials.
 
-*   **Application Audit:** Perform an initial audit of the application to document its current state.
-*   **Prioritize Issues:** Prioritize issues based on severity and impact.
-*   **Project Plan:** Create a detailed project plan with timelines and resources.
-*   **Testing Infrastructure:** Set up monitoring and testing infrastructure.
+---
 
-## Phase 2: Critical Issue Resolution
+## 2. Implementation Plan
 
-*   **Security Vulnerabilities:** Address critical security vulnerabilities.
-*   **Bugs and Errors:** Fix blocking bugs and errors.
-*   **Performance Bottlenecks:** Resolve major performance bottlenecks.
-*   **Accessibility:** Implement essential accessibility features.
+### Phase 1: Foundational Setup
+1.  **Update Firestore Schema:**
+    *   Modify collections (`companies`, `users`, `usage_logs`, `activities`) to support multi-tenancy and RBAC as specified.
+2.  **Define TypeScript Interfaces:**
+    *   Create `src/types.ts` to define interfaces for `User`, `Company`, `UsageLog`, `Activity`, and other data models.
+3.  **Implement Security Rules:**
+    *   Update `firestore.rules` to enforce strict data isolation based on `companyId` and user `role`. Super Admins will have privileged access.
 
-## Phase 3: UI/UX Enhancement
+### Phase 2: Authentication & Role-Based Access
+1.  **Enhance Authentication Hook:**
+    *   Update the `useAuth` hook to fetch and provide the user's role and `companyId` from the `users` collection.
+2.  **Create Protected Routes:**
+    *   Implement a `ProtectedRoute` component that wraps routes, checking for authentication and role permissions.
+3.  **Implement Tenant Context:**
+    *   Create a `TenantProvider` to make the current user's `companyId` globally available to all components, ensuring queries are correctly filtered.
 
-*   **Design System:** Develop and implement a consistent design system.
-*   **UI Redesign:** Redesign user interfaces based on UX principles.
-*   **Responsive Design:** Implement responsive design across all pages.
-*   **Micro-interactions:** Add micro-interactions and polish.
+### Phase 3: Dashboard Implementation
+1.  **Develop Role-Based Dashboards:**
+    *   Create three distinct dashboard components:
+        *   `SuperAdminDashboard.tsx`: For platform-wide management.
+        *   `CompanyAdminDashboard.tsx`: For team and company management.
+        *   `AgentDashboard.tsx`: For operational tasks.
+2.  **Dynamic Sidebar Navigation:**
+    *   Create a dynamic sidebar component that renders navigation links based on the user's role.
+3.  **Refactor Main App Component:**
+    *   Update `App.tsx` to use the new protected routes and render the appropriate dashboard and sidebar based on the logged-in user's role.
 
-## Phase 4: Comprehensive Testing
+### Phase 4: Feature Implementation
+1.  **API Key Management:**
+    *   Build a secure settings page for Company Admins to manage their WhatsApp API credentials.
+2.  **User Management:**
+    *   Create UI and logic for Company Admins to invite, manage, and deactivate users within their company.
+3.  **Financial & Usage Tracking:**
+    *   Develop mock functions to simulate the calculation of usage costs. This will later be replaced by a Cloud Function.
+4.  **Reporting Module:**
+    *   Create a reusable `ReportBuilder` component and implement the specific reports required for each role.
 
-*   **Test Cases:** Execute test cases for all modules.
-*   **Security Testing:** Perform security penetration testing.
-*   **Performance Testing:** Conduct performance testing under various conditions.
-*   **Standards Compliance:** Validate compliance with global standards.
+---
 
-## Phase 5: Final Optimization and Deployment
+## 3. Database Schema
 
-*   **Optimization:** Optimize based on testing results.
-*   **Security Measures:** Implement final security measures.
-*   **Deployment Documentation:** Prepare deployment documentation.
-*   **Monitoring:** Monitor post-deployment performance and user feedback.
+*   **`companies`**: `{ companyId, companyName, apiCredentials, billingInfo, subscriptionStatus, createdBy }`
+*   **`users`**: `{ uid, email, role, companyId, permissions, profile, status }`
+*   **`usage_logs`**: `{ logId, companyId, userId, type, cost, timestamp, messageDirection }`
+*   **`activities`**: `{ activityId, companyId, userId, action, details, timestamp }`
+
+This plan will be executed sequentially to build the specified system.

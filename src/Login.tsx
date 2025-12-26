@@ -10,12 +10,13 @@ import {
   Grid,
   Link
 } from '@mui/material';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -23,6 +24,21 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+
+  const createSuperAdmin = async () => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, 'puneet@skillzip.com', 'Admin@123');
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: 'puneet@skillzip.com',
+        role: 'super_admin',
+        companyId: 'skillzip'
+      });
+      alert('Super admin created successfully!');
+    } catch (error) {
+      console.error('Error creating super admin:', error);
+      alert('Failed to create super admin.');
+    }
+  };
 
   const handleAuth = async () => {
     setError('');
@@ -111,6 +127,7 @@ const Login = () => {
             </Grid>
           </Grid>
         </Box>
+        <Button onClick={createSuperAdmin} sx={{mt: 2}}>Create Super Admin (for testing)</Button>
       </Paper>
     </Container>
   );

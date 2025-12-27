@@ -1,15 +1,9 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { useState, useEffect, ReactNode } from 'react';
 import { auth, db } from './firebase';
+import { onAuthStateChanged, User as FirebaseAuthUser, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { User } from './types';
-
-export interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from './contexts/AuthContext';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -20,14 +14,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthUser | null) => {
       if (firebaseUser) {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           setUser({ ...userDoc.data(), id: userDoc.id } as User);
-        } else {
-          // Handle case where user exists in auth but not in firestore
-          setUser(null);
         }
       } else {
         setUser(null);
@@ -38,8 +29,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, []);
 
+  const logout = () => {
+    signOut(auth);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,135 +1,64 @@
-
 import { useState } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  Typography, 
-  Container, 
-  Paper, 
-  Grid,
-  Link
-} from '@mui/material';
-import { auth, db } from './firebase';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-} from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './firebase';
+import { useNavigate } from 'react-router-dom';
+import { TextField, Button, Paper, Typography, Box } from '@mui/material';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
+  const navigate = useNavigate();
 
-  const createSuperAdmin = async () => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, 'puneet@skillzip.com', 'Admin@123');
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: 'puneet@skillzip.com',
-        role: 'super_admin',
-        companyId: 'skillzip'
-      });
-      alert('Super admin created successfully!');
-    } catch (error) {
-      console.error('Error creating super admin:', error);
-      alert('Failed to create super admin.');
-    }
-  };
-
-  const handleAuth = async () => {
+  const handleLogin = async () => {
     setError('');
-    setInfo('');
-    try {
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      }
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    setError('');
-    setInfo('');
-    if (!email) {
-        setError("Please enter your email to reset your password.");
-        return;
+    if (!email || !password) {
+      setError('Please enter email and password.');
+      return;
     }
     try {
-        await sendPasswordResetEmail(auth, email);
-        setInfo("Password reset email sent. Please check your inbox.");
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
     } catch (err) {
-        if (err instanceof Error) {
-            setError(err.message);
-        }
+      setError('Failed to login. Please check your credentials.');
+      console.error(err);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={6} sx={{ mt: 8, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', borderRadius: '15px' }}>
-        <Typography component="h1" variant="h4" sx={{fontWeight: 'bold', mb: 3}}>
-          {isSignUp ? 'Create an Account' : 'Welcome Back'}
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f5f5f5' }}>
+      <Paper sx={{ p: 4, maxWidth: 400, width: '100%', borderRadius: 2, boxShadow: 3 }}>
+        <Typography variant="h4" sx={{ mb: 3, textAlign: 'center', fontWeight: 'bold' }}>
+          Welcome Back
         </Typography>
-        <Box component="form" sx={{ mt: 1 }} onSubmit={(e) => { e.preventDefault(); handleAuth(); }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
-          {info && <Typography color="primary" sx={{ mt: 2 }}>{info}</Typography>}
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2, borderRadius: '25px', py: 1.5, textTransform: 'none', fontSize: '1rem' }}
-          >
-            {isSignUp ? 'Sign Up' : 'Sign In'}
-          </Button>
-          <Grid container>
-            <Grid item xs>
-                <Link href="#" variant="body2" onClick={handlePasswordReset}>
-                    Forgot password?
-                </Link>
-            </Grid>
-            <Grid item>
-                <Link href="#" variant="body2" onClick={() => setIsSignUp(!isSignUp)}>
-                    {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                </Link>
-            </Grid>
-          </Grid>
-        </Box>
-        <Button onClick={createSuperAdmin} sx={{mt: 2}}>Create Super Admin (for testing)</Button>
+        <TextField
+          label="Email Address"
+          fullWidth
+          margin="normal"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          variant="outlined"
+        />
+        <TextField
+          label="Password"
+          type="password"
+          fullWidth
+          margin="normal"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          variant="outlined"
+        />
+        {error && <Typography color="error" sx={{ my: 2, textAlign: 'center' }}>{error}</Typography>}
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={handleLogin}
+          sx={{ mt: 2, py: 1.5, textTransform: 'none', fontSize: '1.1rem' }}
+        >
+          Login
+        </Button>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

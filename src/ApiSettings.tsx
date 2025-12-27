@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Box, Typography, TextField, Button, CircularProgress } from '@mui/material';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { useAuth } from './useAuth';
-import { useTenant } from './TenantProvider';
+import { useAuth } from './hooks/useAuth';
+import { useTenant } from './hooks/useTenant';
 
 const ApiSettings = () => {
   const { user } = useAuth();
@@ -30,7 +30,7 @@ const ApiSettings = () => {
         'apiCredentials.webAppKey': webAppKey,
       });
       // Optionally, show a success message
-    } catch (err) {
+    } catch {
       setError('Failed to update API credentials.');
     }
     setLoading(false);

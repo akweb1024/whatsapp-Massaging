@@ -1,25 +1,21 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from './useAuth';
-import { UserRole } from './types';
+import { useAuth } from './hooks/useAuth';
+import { User } from './types';
 
-interface ProtectedRouteProps {
+type Props = {
   children: JSX.Element;
-  roles?: UserRole[];
-}
+  allowedRoles: User['role'][];
+};
 
-const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div>Loading...</div>; // Or a spinner
-  }
+const ProtectedRoute = ({ children, allowedRoles }: Props) => {
+  const { user } = useAuth();
 
   if (!user) {
     return <Navigate to="/login" />;
   }
 
-  if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/" />; // Or a custom unauthorized page
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to="/" />;
   }
 
   return children;

@@ -1,16 +1,15 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import AppWrapper from './App';
 import './index.css';
-import App from './App.tsx';
-import { AuthProvider } from './AuthContext';
-import { AppConfigProvider } from './AppConfigContext';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AuthProvider>
-      <AppConfigProvider>
-        <App />
-      </AppConfigProvider>
-    </AuthProvider>
-  </StrictMode>,
+const theme = createTheme();
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <ThemeProvider theme={theme}>
+      <AppWrapper />
+    </ThemeProvider>
+  </React.StrictMode>
 );

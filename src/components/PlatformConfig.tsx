@@ -1,49 +1,60 @@
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Box, Button, TextField, Typography } from '@mui/material';
+import { Box, Typography, Paper, Grid, TextField, Button } from '@mui/material';
 
 const PlatformConfig = () => {
-  const navigate = useNavigate();
-  const [apiCredentials, setApiCredentials] = useState({ openAIKey: '', googleAIKey: '' });
+  const [apiKey, setApiKey] = useState('');
+  const [apiUrl, setApiUrl] = useState('');
 
   useEffect(() => {
     const fetchConfig = async () => {
-      const configDoc = await getDoc(doc(db, 'config', 'apiCredentials'));
-      if (configDoc.exists()) {
-        setApiCredentials(configDoc.data() as { openAIKey: string, googleAIKey: string });
+      const docRef = doc(db, 'platform', 'config');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const config = docSnap.data();
+        setApiKey(config.apiKey || '');
+        setApiUrl(config.apiUrl || '');
       }
     };
     fetchConfig();
   }, []);
 
-  const handleSave = async () => {
-    await setDoc(doc(db, 'config', 'apiCredentials'), apiCredentials);
-    navigate('/');
+  const handleSaveConfig = async () => {
+    const docRef = doc(db, 'platform', 'config');
+    await setDoc(docRef, { apiKey, apiUrl }, { merge: true });
+    alert('Configuration saved!');
   };
 
   return (
-    <Box>
-      <Typography variant="h4">Platform Configuration</Typography>
-      <TextField
-        label="OpenAI API Key"
-        fullWidth
-        margin="normal"
-        value={apiCredentials.openAIKey}
-        onChange={(e) => setApiCredentials({ ...apiCredentials, openAIKey: e.target.value })}
-      />
-      <TextField
-        label="Google AI API Key"
-        fullWidth
-        margin="normal"
-        value={apiCredentials.googleAIKey}
-        onChange={(e) => setApiCredentials({ ...apiCredentials, googleAIKey: e.target.value })}
-      />
-      <Button onClick={handleSave} variant="contained" sx={{ mt: 2 }}>
-        Save
-      </Button>
-    </Box>
+    <Paper sx={{ p: 3 }}>
+      <Typography variant="h6">Platform Configuration</Typography>
+      <Grid container spacing={2} sx={{ mt: 2 }}>
+        <Grid item xs={12}>
+          <TextField
+            label="WhatsApp API URL"
+            fullWidth
+            value={apiUrl}
+            onChange={(e) => setApiUrl(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="WhatsApp API Key"
+            fullWidth
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Button variant="contained" onClick={handleSaveConfig}>
+            Save Configuration
+          </Button>
+        </Grid>
+      </Grid>
+    </Paper>
   );
 };
 

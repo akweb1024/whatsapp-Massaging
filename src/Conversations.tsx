@@ -1,46 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from './firebase';
-import { List, ListItem, ListItemText } from '@mui/material';
+import { List, ListItem, ListItemText, Typography } from '@mui/material';
 import { Conversation } from './types';
 
 interface ConversationsProps {
+  conversations: Conversation[];
   onSelectConversation: (conversationId: string) => void;
 }
 
-const Conversations = ({ onSelectConversation }: ConversationsProps) => {
-  const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-
-  useEffect(() => {
-    if (user && user.companyId) {
-      const q = query(
-        collection(db, 'conversations'),
-        where('companyId', '==', user.companyId),
-        // where('agentId', '==', user.uid) // This will be enabled later
-      );
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const convos: Conversation[] = [];
-        querySnapshot.forEach((doc) => {
-          convos.push({ ...doc.data(), id: doc.id } as Conversation);
-        });
-        setConversations(convos);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [user]);
-
+const Conversations = ({ conversations, onSelectConversation }: ConversationsProps) => {
   return (
-    <List>
-      {conversations.map((convo) => (
-        <ListItem button key={convo.id} onClick={() => onSelectConversation(convo.id)}>
-          <ListItemText primary={convo.customerName} secondary={convo.lastMessage} />
-        </ListItem>
-      ))}
-    </List>
+    <div>
+      <Typography variant="h6">Conversations</Typography>
+      <List>
+        {conversations.map((conv) => (
+          <ListItem button key={conv.id} onClick={() => onSelectConversation(conv.id)}>
+            <ListItemText primary={`Conversation with ${conv.participants.join(', ')}`} secondary={conv.lastMessage} />
+          </ListItem>
+        ))}
+      </List>
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 
 admin.initializeApp();
 
-export const helloWorld = functions.https.onCall((data, context) => {
+export const helloWorld = functions.https.onCall((_data, _context) => {
   return { message: "Hello from Firebase!" };
 });
 

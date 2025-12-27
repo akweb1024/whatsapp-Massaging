@@ -1,37 +1,17 @@
-import { useState } from 'react';
-import { IconButton, CircularProgress } from '@mui/material';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import { storage } from './firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { IconButton } from '@mui/material';
+import { AttachFile } from '@mui/icons-material';
 
-interface UploadButtonProps {
-  onUploadComplete: (url: string) => void;
-}
-
-const UploadButton = ({ onUploadComplete }: UploadButtonProps) => {
-  const [uploading, setUploading] = useState(false);
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setUploading(true);
-      const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
-      try {
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        onUploadComplete(downloadURL);
-      } catch (error) {
-        console.error("Error uploading file:", error);
-      } finally {
-        setUploading(false);
-      }
+const UploadButton = ({ onUpload }: { onUpload: (file: File) => void }) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      onUpload(event.target.files[0]);
     }
   };
 
   return (
-    <IconButton component="label" disabled={uploading} sx={{color: '#AEB4B7'}}>
-      {uploading ? <CircularProgress size={24} /> : <AttachFileIcon />}
-      <input type="file" hidden onChange={handleFileChange} accept="image/*,video/*" />
+    <IconButton component="label">
+      <AttachFile />
+      <input type="file" hidden onChange={handleFileChange} />
     </IconButton>
   );
 };

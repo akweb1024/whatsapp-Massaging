@@ -1,24 +1,21 @@
-import { useState } from 'react';
-import { Box, Grid } from '@mui/material';
-import Conversations from './Conversations';
+import { Box, Typography, Paper } from '@mui/material';
+import { useAuth } from './hooks/useAuth';
 import Chat from './Chat';
 
 const AgentDashboard = () => {
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  if (user?.role !== 'agent') {
+    return <Typography>You do not have permission to view this page.</Typography>;
+  }
 
   return (
-    <Grid container spacing={2}>
-      <Grid item xs={4}>
-        <Conversations onSelectConversation={setSelectedConversation} />
-      </Grid>
-      <Grid item xs={8}>
-        {selectedConversation ? (
-          <Chat conversationId={selectedConversation} />
-        ) : (
-          <Box>Select a conversation to start chatting</Box>
-        )}
-      </Grid>
-    </Grid>
+    <Box>
+      <Typography variant="h4" sx={{ mb: 4 }}>Agent Dashboard</Typography>
+      <Paper sx={{ p: 3 }}>
+        <Chat conversationId='1' />
+      </Paper>
+    </Box>
   );
 };
 

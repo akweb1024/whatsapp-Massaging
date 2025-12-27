@@ -1,20 +1,18 @@
-import { createContext, useContext } from 'react';
-import { useAuth } from './useAuth';
+import { ReactNode, useMemo } from 'react';
+import { useAuth } from './hooks/useAuth';
+import { TenantContext } from './contexts/TenantContext';
 
-interface TenantContextType {
-  companyId: string | null;
+interface TenantProviderProps {
+  children: ReactNode;
 }
 
-const TenantContext = createContext<TenantContextType>({ companyId: null });
-
-export const TenantProvider = ({ children }: { children: React.ReactNode }) => {
-  const { userData } = useAuth();
+export const TenantProvider = ({ children }: TenantProviderProps) => {
+  const { user } = useAuth();
+  const companyId = useMemo(() => user?.companyId || null, [user]);
 
   return (
-    <TenantContext.Provider value={{ companyId: userData?.companyId || null }}>
+    <TenantContext.Provider value={{ companyId }}>
       {children}
     </TenantContext.Provider>
   );
 };
-
-export const useTenant = () => useContext(TenantContext);

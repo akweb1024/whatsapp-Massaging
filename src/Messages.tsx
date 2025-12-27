@@ -1,196 +1,140 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  TextField,
-  List,
-  ListItem,
-  Paper,
-  Typography,
-  Avatar
-} from '@mui/material';
-import { db } from './firebase'; // Make sure this path is correct
-import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-  updateDoc, 
-  arrayUnion
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  addDoc, 
+  serverTimestamp, 
+  where 
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
+import { useAuth } from './hooks/useAuth';
+import { Message } from './types';
+import { 
+  Box, 
+  TextField, 
+  Button, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  Paper, 
+  Typography, 
+  Avatar,
+  Grid,
+  Divider
+} from '@mui/material';
 import UploadButton from './UploadButton';
-import { User } from 'firebase/auth';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
-
-interface Message {
-  id: string;
-  content: string;
-  senderType: 'agent' | 'customer';
-  timestamp: Timestamp;
-  status: 'sent' | 'delivered' | 'read';
-  type: 'text' | 'media';
-  uid: string; // User ID of the sender
-  readBy: string[];
-}
 
 interface MessagesProps {
   conversationId: string;
-  user: User | null; // Pass user from App.tsx
 }
 
-const Messages = ({ conversationId, user }: MessagesProps) => {
+const Messages = ({ conversationId }: MessagesProps) => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  useEffect(scrollToBottom, [messages]);
+
   useEffect(() => {
-    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+    if (!conversationId) return;
+
+    const q = query(
+      collection(db, "messages"),
+      where("conversationId", "==", conversationId),
+      orderBy("timestamp", "asc")
+    );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messagesData: Message[] = [];
-      querySnapshot.forEach((doc) => {
-        const message = { id: doc.id, ...doc.data() } as Message;
-        messagesData.push(message);
-
-        if (user && message.uid !== user.uid && !message.readBy.includes(user.uid)) {
-            const messageRef = doc.ref;
-            updateDoc(messageRef, {
-                readBy: arrayUnion(user.uid)
-            });
-        }
-      });
-      setMessages(messagesData);
+      const msgs = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Message));
+      setMessages(msgs);
     });
 
     return () => unsubscribe();
-  }, [conversationId, user]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [conversationId]);
 
   const handleSendMessage = async () => {
-    if (inputValue.trim() !== '' && conversationId && user) {
-      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-      await addDoc(messagesRef, {
-        content: inputValue,
-        senderType: 'customer',
-        timestamp: Timestamp.now(),
-        status: 'sent',
-        type: 'text',
-        uid: user.uid,
-        readBy: [user.uid],
-      });
-      setInputValue('');
-    }
+    if (newMessage.trim() === '') return;
+
+    await addDoc(collection(db, "messages"), {
+      text: newMessage,
+      sender: user?.id,
+      conversationId,
+      timestamp: serverTimestamp()
+    });
+
+    setNewMessage('');
   };
 
-  const handleUploadComplete = async (url: string) => {
-    if (conversationId && user) {
-      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-      await addDoc(messagesRef, {
-        content: url,
-        senderType: 'customer',
-        timestamp: Timestamp.now(),
-        status: 'sent',
-        type: 'media',
-        uid: user.uid,
-        readBy: [user.uid],
-      });
-    }
-  };
+  const handleUpload = async (file: File) => {
+    if (!conversationId) return;
 
-  const renderMessageContent = (msg: Message) => {
-    if (msg.type === 'media') {
-      return (
-        <Box
-          component="img"
-          src={msg.content}
-          alt="Media message"
-          sx={{
-            maxWidth: '100%',
-            maxHeight: '300px',
-            borderRadius: '10px',
-            mt: 1,
-          }}
-        />
-      );
-    }
-    return <Typography variant="body1">{msg.content}</Typography>;
+    const storageRef = ref(storage, `attachments/${conversationId}/${file.name}`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+
+    await addDoc(collection(db, "messages"), {
+      attachment: downloadURL,
+      sender: user?.id,
+      conversationId,
+      timestamp: serverTimestamp()
+    });
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2, backgroundColor: '#0B141A' }}>
-      <Paper elevation={0} sx={{ flexGrow: 1, overflowY: 'auto', p: 2, mb: 2, backgroundColor: 'transparent' }}>
+    <Paper sx={{ p: 3, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+      <Typography variant="h6" sx={{ mb: 2 }}>Chat</Typography>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', mb: 2 }}>
         <List>
-          {messages.map((msg) => {
-            const isSender = msg.uid === user?.uid;
-            const isRead = msg.readBy.length > 1;
-            return (
-              <ListItem key={msg.id} sx={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start', p: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1}}>
-                    {!isSender && <Avatar sx={{ width: 24, height: 24 }} />}
-                    <Paper
-                    elevation={1}
-                    sx={{
-                        p: '10px 16px',
-                        borderRadius: isSender ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
-                        backgroundColor: isSender ? '#005C4B' : '#3E4A52',
-                        color: 'white',
-                        maxWidth: '70%',
-                    }}
-                    >
-                    {renderMessageContent(msg)}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 0.5 }}>
-                        <Typography variant="caption" sx={{ color: '#B0B0B0', mr: 0.5 }}>
-                            {msg.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </Typography>
-                        {isSender && <DoneAllIcon fontSize="small" sx={{ color: isRead ? '#53BDEB' : '#B0B0B0' }} />}
-                    </Box>
-                    </Paper>
-                </Box>
-              </ListItem>
-            );
-          })}
-           <div ref={messagesEndRef} />
+          {messages.map(msg => (
+            <ListItem key={msg.id} sx={{ justifyContent: msg.sender === user?.id ? 'flex-end' : 'flex-start' }}>
+              <Box sx={{ 
+                bgcolor: msg.sender === user?.id ? 'primary.main' : 'grey.300', 
+                color: msg.sender === user?.id ? 'primary.contrastText' : 'inherit',
+                p: 1,
+                borderRadius: 2,
+                maxWidth: '70%'
+              }}>
+                <Grid container spacing={1} alignItems="center">
+                  <Grid item>
+                    <Avatar sx={{ width: 30, height: 30 }}>{/* User avatar logic here */}</Avatar>
+                  </Grid>
+                  <Grid item>
+                    {msg.text && <ListItemText primary={msg.text} />}
+                    {msg.attachment && (
+                      <a href={msg.attachment} target="_blank" rel="noopener noreferrer">
+                        <img src={msg.attachment} alt="attachment" width="200" />
+                      </a>
+                    )}
+                  </Grid>
+                </Grid>
+              </Box>
+            </ListItem>
+          ))}
         </List>
-      </Paper>
-      <Box
-        component="form"
-        sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, backgroundColor: '#1F2C34' }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSendMessage();
-        }}
-      >
-        <UploadButton onUploadComplete={handleUploadComplete} />
+        <div ref={messagesEndRef} />
+      </Box>
+      <Divider />
+      <Box sx={{ display: 'flex', mt: 2 }}>
         <TextField
           fullWidth
-          variant="filled"
-          placeholder="Type a message"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          disabled={!conversationId}
-          sx={{
-            '& .MuiFilledInput-root': {
-                borderRadius: '20px',
-                backgroundColor: '#3E4A52',
-                '&:hover': {
-                    backgroundColor: '#3E4A52',
-                },
-                '&.Mui-focused': {
-                    backgroundColor: '#3E4A52',
-                }
-            },
-            '& .MuiFilledInput-input': {
-                color: 'white',
-            }
-          }}
+          variant="outlined"
+          placeholder="Type a message..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
         />
+        <UploadButton onUpload={handleUpload} />
+        <Button variant="contained" onClick={handleSendMessage} sx={{ ml: 1 }}>Send</Button>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 

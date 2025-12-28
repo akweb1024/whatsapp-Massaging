@@ -2,6 +2,8 @@
 import { Box, Typography } from '@mui/material';
 import CreateUserForm from './components/CreateUserForm';
 import UserManagementTable from './components/UserManagementTable';
+import CreateCompanyForm from './components/CreateCompanyForm';
+import CompanyManagementTable from './components/CompanyManagementTable';
 
 const SuperAdminDashboard = () => {
   return (
@@ -9,6 +11,8 @@ const SuperAdminDashboard = () => {
       <Typography variant="h4">Super Admin Dashboard</Typography>
       <CreateUserForm />
       <UserManagementTable />
+      <CreateCompanyForm />
+      <CompanyManagementTable />
     </Box>
   );
 };

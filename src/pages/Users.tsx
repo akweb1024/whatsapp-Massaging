@@ -3,11 +3,12 @@ import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import UserFormModal from '../components/UserFormModal';
+import { User } from '../types';
 
 const Users = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -15,10 +16,10 @@ const Users = () => {
 
   const fetchUsers = async () => {
     const usersCollection = await getDocs(collection(db, 'users'));
-    setUsers(usersCollection.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setUsers(usersCollection.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
   };
 
-  const handleOpenModal = (user: any | null = null) => {
+  const handleOpenModal = (user: User | null = null) => {
     setSelectedUser(user);
     setIsModalOpen(true);
   };
@@ -63,7 +64,9 @@ const Users = () => {
           </TableBody>
         </Table>
       </TableContainer>
-      <UserFormModal open={isModalOpen} onClose={handleCloseModal} user={selectedUser} />
+      { selectedUser &&
+        <UserFormModal open={isModalOpen} onClose={handleCloseModal} user={selectedUser} />
+      }
     </Box>
   );
 };

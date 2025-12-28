@@ -42,8 +42,10 @@ const CreateUserForm = () => {
       setPassword('');
       setRole('');
       setCompany('');
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
     }
   };
 

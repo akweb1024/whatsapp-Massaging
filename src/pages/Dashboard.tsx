@@ -3,8 +3,7 @@ import { Box, Typography, Button } from '@mui/material';
 import DashboardLayout from '../layout/DashboardLayout';
 import { Link } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { auth } from '../firebase';
 import { UserRole } from '../types';
 
 const Dashboard: React.FC = () => {

@@ -53,8 +53,10 @@ const UserFormModal = ({ open, onClose, user }: UserFormModalProps) => {
       });
       setSuccess('User updated successfully!');
       onClose();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
     }
   };
 

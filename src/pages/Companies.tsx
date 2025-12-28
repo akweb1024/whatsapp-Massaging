@@ -37,7 +37,7 @@ const Companies = () => {
   return (
     <div>
       <Button onClick={() => handleOpen()}>Add Company</Button>
-      <CompaniesTable />
+      <CompaniesTable onEdit={handleOpen} />
 
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>{currentCompany ? 'Edit Company' : 'Add Company'}</DialogTitle>

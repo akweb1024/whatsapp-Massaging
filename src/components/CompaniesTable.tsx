@@ -10,9 +10,13 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { Company } from '../types';
 
+interface CompaniesTableProps {
+  onEdit: (company: Company) => void;
+}
+
 const columnHelper = createColumnHelper<Company>();
 
-const columns = [
+const columns = (onEdit: (company: Company) => void) => [
   columnHelper.accessor('name', {
     cell: (info) => info.getValue(),
     header: () => <span>Name</span>,
@@ -24,7 +28,7 @@ const columns = [
       };
       return (
         <>
-          <Button>Edit</Button>
+          <Button onClick={() => onEdit(info.row.original)}>Edit</Button>
           <Button onClick={onDelete}>Delete</Button>
         </>
       );
@@ -33,14 +37,14 @@ const columns = [
   }),
 ];
 
-export const CompaniesTable = () => {
+export const CompaniesTable = ({ onEdit }: CompaniesTableProps) => {
   const [snapshot, loading] = useCollection(collection(db, 'companies'));
 
   const companies = snapshot?.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Company));
 
   const table = useReactTable({
     data: companies || [],
-    columns,
+    columns: columns(onEdit),
     getCoreRowModel: getCoreRowModel(),
   });
 

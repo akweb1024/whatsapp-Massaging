@@ -22,6 +22,7 @@ const Companies = () => {
 
   const handleClose = () => {
     setOpen(false);
+    setCurrentCompany(null);
   };
 
   const handleSave = async (company: Omit<Company, 'id'>) => {

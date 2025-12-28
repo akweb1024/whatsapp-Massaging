@@ -4,6 +4,8 @@ import Auth from './Auth';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import Companies from './pages/Companies';
+import Messages from './pages/Messages';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import theme from './theme';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -54,6 +56,14 @@ function App() {
                 <Settings />
               </RoleBasedRoute>
             }
+          />
+           <Route 
+            path="/companies"
+            element={user ? <Companies /> : <Navigate to="/login" />}
+          />
+           <Route 
+            path="/messages"
+            element={user ? <Messages /> : <Navigate to="/login" />}
           />
         </Routes>
       </Router>

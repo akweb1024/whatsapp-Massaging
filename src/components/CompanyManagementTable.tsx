@@ -13,13 +13,16 @@ import {
   Box
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import CompanyFormModal from './CompanyFormModal';
 
 interface Company {
   id: string;
   name: string;
+  address: string;
+  city: string;
+  country: string;
 }
 
 const CompanyManagementTable = () => {
@@ -29,29 +32,25 @@ const CompanyManagementTable = () => {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchCompanies = async () => {
+  useEffect(() => {
     setLoading(true);
-    setError('');
-    try {
-      const querySnapshot = await getDocs(collection(db, 'companies'));
+    const unsubscribe = onSnapshot(collection(db, 'companies'), (querySnapshot) => {
       const companiesData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Company[];
       setCompanies(companiesData);
-    } catch (error) {
+      setLoading(false);
+    }, (err) => {
       setError('Failed to fetch companies.');
-      console.error('Error fetching companies:', error);
-    }
-    setLoading(false);
-  };
+      console.error('Error fetching companies:', err);
+      setLoading(false);
+    });
 
-  useEffect(() => {
-    fetchCompanies();
+    return () => unsubscribe();
   }, []);
 
   const handleDeleteCompany = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this company?')) {
       try {
         await deleteDoc(doc(db, 'companies', id));
-        setCompanies(companies.filter(company => company.id !== id));
       } catch (error) {
         setError('Failed to delete company.');
         console.error('Error deleting company:', error);
@@ -67,7 +66,6 @@ const CompanyManagementTable = () => {
   const handleCloseModal = () => {
     setEditingCompany(null);
     setIsModalOpen(false);
-    fetchCompanies(); // Refresh companies after editing
   };
   
   if (loading) {
@@ -86,6 +84,9 @@ const CompanyManagementTable = () => {
             <TableHead>
             <TableRow>
                 <TableCell>Company Name</TableCell>
+                <TableCell>Address</TableCell>
+                <TableCell>City</TableCell>
+                <TableCell>Country</TableCell>
                 <TableCell>Actions</TableCell>
             </TableRow>
             </TableHead>
@@ -93,6 +94,9 @@ const CompanyManagementTable = () => {
             {companies.map((company) => (
                 <TableRow key={company.id}>
                 <TableCell>{company.name}</TableCell>
+                <TableCell>{company.address}</TableCell>
+                <TableCell>{company.city}</TableCell>
+                <TableCell>{company.country}</TableCell>
                 <TableCell>
                     <IconButton onClick={() => handleEditCompany(company)}>
                     <Edit />

@@ -5,9 +5,16 @@ export interface Tenant {
   name: string;
 }
 
+export interface Company {
+    id: string;
+    name: string;
+}
+
 export interface User {
   uid: string;
   email: string;
   role: UserRole;
   companyId?: string;
+  fullName?: string;
+  company?: string;
 }

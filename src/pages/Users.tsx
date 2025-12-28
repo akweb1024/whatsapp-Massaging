@@ -16,7 +16,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     const usersCollection = await getDocs(collection(db, 'users'));
-    setUsers(usersCollection.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    setUsers(usersCollection.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
   };
 
   const handleOpenModal = (user: User | null = null) => {
@@ -52,21 +52,25 @@ const Users = () => {
           </TableHead>
           <TableBody>
             {users.map(user => (
-              <TableRow key={user.id}>
+              <TableRow key={user.uid}>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
                   <Button onClick={() => handleOpenModal(user)}>Edit</Button>
-                  <Button onClick={() => handleDeleteUser(user.id)}>Delete</Button>
+                  <Button onClick={() => handleDeleteUser(user.uid)}>Delete</Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      { selectedUser &&
-        <UserFormModal open={isModalOpen} onClose={handleCloseModal} user={selectedUser} />
-      }
+      {isModalOpen && (
+        <UserFormModal
+          open={isModalOpen}
+          onClose={handleCloseModal}
+          user={selectedUser}
+        />
+      )}
     </Box>
   );
 };

@@ -1,24 +1,78 @@
-# Blueprint
+# WhatsApp Messaging Platform
 
 ## Overview
 
-This is a multi-tenant chat application with role-based access control. 
+This is a multi-tenant web application that allows users to send and receive WhatsApp messages. The application is built with React and Firebase and includes role-based access control.
 
-## Implemented Features
+### Features:
 
-* User authentication with Firebase.
-* Role-based routing.
-* Super Admin, Company Admin, and Agent dashboards.
-* Chat functionality with conversations and messages.
-* File attachments in chat.
-* User and company management for admins.
-* Settings page for user profile updates.
+*   **User Authentication:** Secure user sign-up and login using Firebase Authentication.
+*   **Role-Based Access Control (RBAC):**
+    *   Three user roles: `user`, `admin`, and `superadmin`.
+    *   `superadmin` has full access to user management and application settings.
+    *   UI elements and routes are conditionally rendered based on user roles.
+*   **User Management (Super Admin):**
+    *   A dedicated `Users` page for managing all users.
+    *   Create, Read, Update, and Delete (CRUD) functionality for users.
+    *   A modal (`UserFormModal`) for adding and editing user details (email, role).
+    *   User roles are managed using Firebase custom claims.
+*   **Settings (Super Admin):**
+    *   A dedicated `Settings` page for super admin users.
+*   **Dashboard:** A central dashboard that provides an overview and navigation.
+    *   `superadmin` users see links to the "Manage Users" and "Settings" pages.
+*   **Multi-tenancy:** Each tenant has its own isolated set of users and companies.
+*   **Messaging:** (Planned) Functionality to send and receive WhatsApp messages.
 
-## Current Plan
+## Project Structure
 
-I will now debug the application and ensure it is ready for deployment. This will involve the following steps:
+```
+src
+├── components
+│   ├── layout
+│   │   ├── AppBar.tsx
+│   │   ├── DashboardLayout.tsx
+│   │   └── Sidebar.tsx
+│   ├── UserFormModal.tsx
+│   ├── Auth.tsx
+│   ├── CreateUserForm.tsx
+│   ├── InviteUserModal.tsx
+│   └── Message.tsx
+├── layout
+│   └── Dashboard.tsx
+├── pages
+│   ├── Companies.tsx
+│   ├── Dashboard.tsx
+│   ├── Messages.tsx
+│   ├── Login.tsx
+│   ├── Settings.tsx
+│   └── Users.tsx
+├── App.tsx
+├── firebase.ts
+├── main.tsx
+├── theme.ts
+└── types.ts
+functions
+├── index.js
+└── package.json
+```
 
-1.  **Fix all compilation errors.** I will go through each of the reported errors from the `npm run build` command and fix them.
-2.  **Run the application.** I will start the development server to ensure the application runs without any runtime errors.
-3.  **Test the application manually.** I will go through the different user roles and test the functionality of the application to ensure everything is working as expected.
-4.  **Deploy to Firebase Hosting.** Once I am confident that the application is working correctly, I will deploy it to Firebase Hosting.
+## Current Status
+
+The application has a solid foundation with a robust user management system.
+
+*   **Implemented:**
+    *   User authentication (Login, Logout).
+    *   A complete user management module for `superadmin` users, including creating, viewing, updating, and deleting users and their roles.
+    *   A `Settings` page for `superadmin` users.
+    *   Role-based access control to restrict access to the user management and settings pages, with conditional rendering in the sidebar.
+    *   A basic dashboard that adapts to the user's role.
+    *   Cloud Function (`setCustomUserClaims`) to manage user roles securely.
+
+## Next Steps
+
+*   Implement the core functionality of sending and receiving WhatsApp messages.
+*   Develop the "Companies" management section.
+*   Flesh out the "Settings" page with actual configuration options.
+*   Implement a billing and subscription system.
+*   Enhance the UI and user experience.
+*   Add comprehensive testing for all components and functions.

@@ -1,51 +1,64 @@
-
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import SuperAdminDashboard from './SuperAdminDashboard';
-import MainLayout from './MainLayout';
-import { AuthProvider } from './AuthProvider';
-import { AppConfigProvider } from './AppConfigProvider';
-import Team from './Team';
-import Settings from './Settings';
-import ConfigurationNeeded from './components/ConfigurationNeeded';
-import Login from './Login';
-import Unauthorized from './Unauthorized';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import Auth from './Auth';
+import Dashboard from './pages/Dashboard';
+import Users from './pages/Users';
+import Settings from './pages/Settings';
+import RoleBasedRoute from './components/RoleBasedRoute';
+import theme from './theme';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { UserRole } from './types';
 
 function App() {
+  const [user] = useAuthState(auth);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
+        }
+      }
+    };
+    fetchUserRole();
+  }, [user]);
+
   return (
-    <AuthProvider>
-      <AppConfigProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route 
-              path="/" 
-              element={<MainLayout />}
-            >
-              <Route index element={<Navigate to="/dashboard" />} />
-              <Route 
-                path="dashboard" 
-                element={
-                  <ConfigurationNeeded>
-                    <Dashboard />
-                  </ConfigurationNeeded>
-                }
-              />
-              <Route 
-                path="team" 
-                element={<Team />}
-              />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AppConfigProvider>
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Auth isSignUpFlow={false} />} />
+          <Route path="/signup" element={<Auth isSignUpFlow={true} />} />
+          <Route path="/auth" element={<Navigate to="/login" />} />
+          <Route 
+            path="/"
+            element={user ? <Dashboard /> : <Navigate to="/login" />}
+          />
+          <Route 
+            path="/users"
+            element={
+              <RoleBasedRoute allowedRoles={['superadmin']} currentUserRole={userRole}>
+                <Users />
+              </RoleBasedRoute>
+            }
+          />
+          <Route 
+            path="/settings"
+            element={
+              <RoleBasedRoute allowedRoles={['superadmin']} currentUserRole={userRole}>
+                <Settings />
+              </RoleBasedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
-
-const Dashboard = () => {
-  return <SuperAdminDashboard />;
-};
 
 export default App;

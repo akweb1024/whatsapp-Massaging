@@ -1,50 +1,47 @@
-import { List, ListItem, ListItemText } from '@mui/material';
-import { useAuth } from './useAuth';
+
+import { Drawer, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Link } from 'react-router-dom';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import SettingsIcon from '@mui/icons-material/Settings';
+
+const drawerWidth = 240;
 
 const Sidebar = () => {
-  const { user } = useAuth();
-
-  const superAdminLinks = [
-    { text: 'Dashboard', path: '/' },
-    { text: 'Companies', path: '/companies' },
-    { text: 'Financials', path: '/financials' },
-    { text: 'Settings', path: '/settings' },
-  ];
-
-  const companyAdminLinks = [
-    { text: 'Dashboard', path: '/' },
-    { text: 'Inbox', path: '/inbox' },
-    { text: 'Contacts', path: '/contacts' },
-    { text: 'Campaigns', path: '/campaigns' },
-    { text: 'Team', path: '/team' },
-    { text: 'Billing', path: '/billing' },
-    { text: 'API Settings', path: '/api-settings' },
-  ];
-
-  const agentLinks = [
-    { text: 'Dashboard', path: '/' },
-    { text: 'Inbox', path: '/inbox' },
-    { text: 'My Contacts', path: '/my-contacts' },
-    { text: 'My Reports', path: '/my-reports' },
-  ];
-
-  let links = [];
-  if (user?.role === 'super_admin') {
-    links = superAdminLinks;
-  } else if (user?.role === 'company_admin') {
-    links = companyAdminLinks;
-  } else {
-    links = agentLinks;
-  }
-
   return (
-    <List>
-      {links.map((link) => (
-        <ListItem button key={link.text} component="a" href={link.path}>
-          <ListItemText primary={link.text} />
+    <Drawer
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+        },
+      }}
+      variant="permanent"
+      anchor="left"
+    >
+      <List>
+        <ListItem button component={Link} to="/dashboard">
+          <ListItemIcon>
+            <DashboardIcon />
+          </ListItemIcon>
+          <ListItemText primary="Dashboard" />
         </ListItem>
-      ))}
-    </List>
+        <ListItem button component={Link} to="/team">
+          <ListItemIcon>
+            <PeopleIcon />
+          </ListItemIcon>
+          <ListItemText primary="Team" />
+        </ListItem>
+        <ListItem button component={Link} to="/settings">
+          <ListItemIcon>
+            <SettingsIcon />
+          </ListItemIcon>
+          <ListItemText primary="Settings" />
+        </ListItem>
+      </List>
+    </Drawer>
   );
 };
 

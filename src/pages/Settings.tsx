@@ -1,11 +1,10 @@
-
 import { Box, Typography } from '@mui/material';
 
 const Settings = () => {
   return (
     <Box>
       <Typography variant="h4">Settings</Typography>
-      <Typography>Application settings will be configured here.</Typography>
+      <p>This is the settings page for the super admin.</p>
     </Box>
   );
 };

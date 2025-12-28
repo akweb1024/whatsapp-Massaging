@@ -8,6 +8,7 @@ export interface Tenant {
 export interface Company {
     id: string;
     name: string;
+    address?: string;
 }
 
 export interface User {

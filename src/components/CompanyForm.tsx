@@ -21,6 +21,7 @@ export const CompanyForm = ({ company, onSave, onCancel }: CompanyFormProps) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Saving company:', { name, address });
     onSave({ name, address });
   };
 

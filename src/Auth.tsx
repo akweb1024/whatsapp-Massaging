@@ -33,6 +33,7 @@ const Auth = ({ isSignUpFlow }: AuthProps) => {
           role: role,
         });
         console.log('User created successfully:', user);
+        alert('Account created successfully! You will now be redirected to the homepage.');
         navigate('/');
       } else {
         await signInWithEmailAndPassword(auth, email, password);

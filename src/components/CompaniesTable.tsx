@@ -5,18 +5,19 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { db } from '../firebase';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import { Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { Company } from '../types';
 
 interface CompaniesTableProps {
   onEdit: (company: Company) => void;
+  refetch: boolean;
 }
 
 const columnHelper = createColumnHelper<Company>();
 
-const columns = (onEdit: (company: Company) => void) => [
+const columns = (onEdit: (company: Company) => void, refetchData: () => void) => [
   columnHelper.accessor('name', {
     cell: (info) => info.getValue(),
     header: () => <span>Name</span>,
@@ -25,6 +26,7 @@ const columns = (onEdit: (company: Company) => void) => [
     cell: (info) => {
       const onDelete = async () => {
         await deleteDoc(doc(db, 'companies', info.getValue()));
+        refetchData();
       };
       return (
         <>
@@ -37,14 +39,25 @@ const columns = (onEdit: (company: Company) => void) => [
   }),
 ];
 
-export const CompaniesTable = ({ onEdit }: CompaniesTableProps) => {
-  const [snapshot, loading] = useCollection(collection(db, 'companies'));
+export const CompaniesTable = ({ onEdit, refetch }: CompaniesTableProps) => {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const companies = snapshot?.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Company));
+  const fetchCompanies = async () => {
+    setLoading(true);
+    const querySnapshot = await getDocs(collection(db, 'companies'));
+    const companiesData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Company));
+    setCompanies(companiesData);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [refetch]);
 
   const table = useReactTable({
     data: companies || [],
-    columns: columns(onEdit),
+    columns: columns(onEdit, fetchCompanies),
     getCoreRowModel: getCoreRowModel(),
   });
 

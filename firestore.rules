@@ -1,54 +1,8 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSuperAdmin() {
-      return getUserData(request.auth.uid).role == 'super_admin';
-    }
-
-    function isCompanyAdmin(companyId) {
-      let userData = getUserData(request.auth.uid);
-      return userData.role == 'company_admin' && userData.companyId == companyId;
-    }
-
-    function isAgent(companyId) {
-      let userData = getUserData(request.auth.uid);
-      return userData.role == 'agent' && userData.companyId == companyId;
-    }
-
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-
-    match /config/whatsapp {
-      allow read, write: if isSuperAdmin();
-    }
-
-    match /companies/{companyId} {
-      allow read, write: if isSuperAdmin();
-      allow read: if isCompanyAdmin(companyId);
-    }
-
-    match /users/{userId} {
-      allow read, write: if isSuperAdmin();
-      allow read: if request.auth.uid == userId;
-      allow write: if isCompanyAdmin(getUserData(userId).companyId);
-    }
-
-    match /usage_logs/{logId} {
-      allow read: if isSuperAdmin() || isCompanyAdmin(resource.data.companyId);
-    }
-
-    match /activities/{activityId} {
-      allow read: if isSuperAdmin() || isCompanyAdmin(resource.data.companyId) || isAgent(resource.data.companyId);
-    }
-
-    match /conversations/{convId} {
-      allow read, write: if isSuperAdmin() || isCompanyAdmin(resource.data.companyId) || isAgent(resource.data.companyId);
-
-      match /messages/{msgId} {
-        allow read, write: if isSuperAdmin() || isCompanyAdmin(get(/databases/$(database)/documents/conversations/$(convId)).data.companyId) || isAgent(get(/databases/$(database)/documents/conversations/$(convId)).data.companyId);
-      }
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { 
@@ -14,6 +14,7 @@ import { Company } from '../types';
 const Companies = () => {
   const [open, setOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
+  const [refetch, setRefetch] = useState(false);
 
   const handleOpen = (company: Company | null = null) => {
     setCurrentCompany(company);
@@ -31,13 +32,14 @@ const Companies = () => {
     } else {
       await addDoc(collection(db, 'companies'), company);
     }
+    setRefetch((prev) => !prev);
     handleClose();
   };
 
   return (
     <div>
       <Button onClick={() => handleOpen()}>Add Company</Button>
-      <CompaniesTable onEdit={handleOpen} />
+      <CompaniesTable onEdit={handleOpen} refetch={refetch} />
 
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>{currentCompany ? 'Edit Company' : 'Add Company'}</DialogTitle>

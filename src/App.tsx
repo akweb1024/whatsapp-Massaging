@@ -13,22 +13,37 @@ import { auth, db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { UserRole } from './types';
+import { CircularProgress, Box } from '@mui/material';
 
 function App() {
-  const [user] = useAuthState(auth);
+  const [user, initialising] = useAuthState(auth);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserRole(userDoc.data().role);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user role:", error);
         }
       }
+      setLoading(false);
     };
     fetchUserRole();
   }, [user]);
+
+  if (initialising || loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
